@@ -75,12 +75,4 @@ void (async () => {
   }
 
   await checkFeed(process.env.RSS_FEED_URL)
-
-  setInterval(() => {
-    if (!process.env.RSS_FEED_URL) {
-      console.error('RSS_FEED_URL is not defined')
-      return
-    }
-    checkFeed(process.env.RSS_FEED_URL)
-  }, 5 * 60 * 1000)
 })()
