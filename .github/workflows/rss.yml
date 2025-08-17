@@ -1,0 +1,17 @@
+name: rss-bot
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Execute every day at 09:00 (JST is UTC+9)
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.15.0
+      - run: pnpm install
+      - run: pnpm run build
+      - run: pnpm run start
