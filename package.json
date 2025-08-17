@@ -11,6 +11,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
+    "@dotenvx/dotenvx": "^1.48.4",
     "@types/node": "^24.3.0",
     "typescript": "^5.9.2"
   },
