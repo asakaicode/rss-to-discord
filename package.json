@@ -1,0 +1,23 @@
+{
+  "name": "rss-to-discord",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx dotenvx run -- tsc",
+    "start": "npx dotenvx run -- node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^1.48.4",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0"
+  }
+}
