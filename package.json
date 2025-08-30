@@ -18,6 +18,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "aws-sdk": "^2.1692.0",
     "rss-parser": "^3.13.0"
   }
 }
