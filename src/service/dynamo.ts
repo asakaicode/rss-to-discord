@@ -1,19 +1,24 @@
-import AWS from 'aws-sdk'
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+} from '@aws-sdk/lib-dynamodb'
 
-const TABLE_NAME = 'RssLastPublished'
+export class DynamoDBService {
+  private doc: DynamoDBDocumentClient
 
-export class DynamoDBService extends AWS.DynamoDB.DocumentClient {
-  constructor() {
-    super()
+  constructor(private tableName: string) {
+    const ddb = new DynamoDBClient({})
+    this.doc = DynamoDBDocumentClient.from(ddb)
   }
 
   public async fetchLastFeedPublishedDate(
     feedUrl: string,
   ): Promise<Date | null> {
-    const lastItem = await this.get({
-      TableName: TABLE_NAME,
-      Key: { FeedUrl: feedUrl },
-    }).promise()
+    const lastItem = await this.doc.send(
+      new GetCommand({ TableName: this.tableName, Key: { FeedUrl: feedUrl } }),
+    )
     return lastItem.Item?.LastPublished
       ? new Date(lastItem.Item.LastPublished)
       : null
@@ -23,12 +28,14 @@ export class DynamoDBService extends AWS.DynamoDB.DocumentClient {
     feedUrl: string,
     newDate: Date,
   ): Promise<void> {
-    await this.put({
-      TableName: TABLE_NAME,
-      Item: {
-        FeedUrl: feedUrl,
-        LastPublished: newDate.toISOString(),
-      },
-    }).promise()
+    await this.doc.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          FeedUrl: feedUrl,
+          LastPublished: newDate.toISOString(),
+        },
+      }),
+    )
   }
 }

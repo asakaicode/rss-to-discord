@@ -3,6 +3,8 @@ import { DiscordWebhookService } from './service/discordWebhook'
 import { DynamoDBService } from './service/dynamo'
 import { SSMService } from './service/ssm'
 
+const TABLE_NAME = 'RssLastPublished'
+
 export const handler = async () => {
   const ssmClient = new SSMService()
   const params = await ssmClient.fetchParameters([
@@ -11,7 +13,7 @@ export const handler = async () => {
   ])
 
   const parser = new Parser()
-  const dynamoClient = new DynamoDBService()
+  const dynamoClient = new DynamoDBService(TABLE_NAME)
   const discordWebhookClient = new DiscordWebhookService(
     params['/rssBot/webhookUrl'] as string,
   )

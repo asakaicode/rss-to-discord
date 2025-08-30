@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk'
+import { GetParameterCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm'
 
 enum SSM_PARAMETER_TYPE {
   STRING = 'String',
@@ -6,18 +6,23 @@ enum SSM_PARAMETER_TYPE {
   SECURE_STRING = 'SecureString',
 }
 
-export class SSMService extends AWS.SSM {
+export class SSMService extends SSMClient {
   constructor() {
     super()
   }
 
   public async fetchParameter(name: string): Promise<string | string[]> {
-    const result = await this.getParameter({
-      Name: name,
-      WithDecryption: true,
-    }).promise()
+    const result = await this.send(
+      new GetParameterCommand({
+        Name: name,
+        WithDecryption: true,
+      }),
+    )
 
-    if (!result.$response.error) {
+    if (
+      !result.$metadata.httpStatusCode ||
+      result.$metadata.httpStatusCode >= 400
+    ) {
       throw new Error(`Parameter ${name} not found`)
     }
 
@@ -41,7 +46,7 @@ export class SSMService extends AWS.SSM {
     }, {})
   }
 
-  private parseParameter(parameter?: AWS.SSM.Parameter): string | string[] {
+  private parseParameter(parameter?: Parameter): string | string[] {
     switch (parameter?.Type) {
       case SSM_PARAMETER_TYPE.STRING:
       case SSM_PARAMETER_TYPE.SECURE_STRING:
