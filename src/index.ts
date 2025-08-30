@@ -1,86 +1,47 @@
-import fs from 'fs'
 import Parser from 'rss-parser'
+import { DiscordWebhookService } from './service/discordWebhook'
+import { DynamoDBService } from './service/dynamo'
+import { SSMService } from './service/ssm'
 
-const parser = new Parser()
-const LAST_FILE = './lastPublished.json'
+const TABLE_NAME = 'RssLastPublished'
 
-const getLastPublished = () => {
-  try {
-    const data = JSON.parse(fs.readFileSync(LAST_FILE).toString())
-    return new Date(data.lastPublished)
-  } catch {
-    return new Date(0)
-  }
-}
+export const handler = async () => {
+  const ssmClient = new SSMService()
+  const params = await ssmClient.fetchParameters([
+    '/rssBot/webhookUrl',
+    '/rssBot/rssFeeds',
+  ])
 
-const setLastPublished = (date: Date) => {
-  fs.writeFileSync(
-    LAST_FILE,
-    JSON.stringify({ lastPublished: date.toISOString() }),
+  const parser = new Parser()
+  const dynamoClient = new DynamoDBService(TABLE_NAME)
+  const discordWebhookClient = new DiscordWebhookService(
+    params['/rssBot/webhookUrl'] as string,
   )
-}
 
-const checkFeed = async (rssUrl: string) => {
-  if (!process.env.DISCORD_WEBHOOK_URL) {
-    console.error('DISCORD_WEBHOOK_URL is not defined')
-    return
-  }
+  for (const feedUrl of params['/rssBot/rssFeeds']) {
+    console.log(`Checking feed: ${feedUrl}`)
+    const feed = await parser.parseURL(feedUrl)
 
-  console.log('Checking RSS ...')
+    const lastPublishedDate = await dynamoClient.fetchLastFeedPublishedDate(
+      feedUrl,
+    )
 
-  const feed = await parser.parseURL(rssUrl)
-  const lastPublished = getLastPublished()
-  let newest = lastPublished
+    let newest = lastPublishedDate ?? new Date(0)
 
-  for (const item of feed.items) {
-    const pubDate = new Date(item.pubDate || item.isoDate || 0)
+    for (const item of feed.items) {
+      const pubDate = new Date(item.pubDate || item.isoDate || 0)
 
-    if (pubDate > lastPublished) {
-      console.log('New post: ', item.title)
-
-      // Push to Discord
-      await fetch(process.env.DISCORD_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: 'RSS Bot',
-          embeds: [
-            {
-              title: item.title,
-              url: item.link,
-              description: item.contentSnippet || '',
-              timestamp: pubDate.toISOString(),
-            },
-          ],
-        }),
-      })
-
-      if (pubDate > newest) {
-        newest = pubDate
+      if (!newest || pubDate > newest) {
+        await discordWebhookClient.sendToDiscord(
+          item.title ?? 'No Title',
+          item.link ?? 'No Link',
+          pubDate,
+        )
       }
     }
-  }
 
-  if (newest > lastPublished) {
-    setLastPublished(newest)
+    if (!lastPublishedDate || newest > lastPublishedDate) {
+      await dynamoClient.updateLastPublishedDate(feedUrl, newest)
+    }
   }
 }
-
-void (async () => {
-  if (!process.env.RSS_FEED_URL) {
-    console.error('RSS_FEED_URL is not defined')
-    return
-  }
-
-  await checkFeed(process.env.RSS_FEED_URL)
-
-  setInterval(() => {
-    if (!process.env.RSS_FEED_URL) {
-      console.error('RSS_FEED_URL is not defined')
-      return
-    }
-    checkFeed(process.env.RSS_FEED_URL)
-  }, 5 * 60 * 1000)
-})()
