@@ -1,7 +1,7 @@
 import Parser from 'rss-parser'
-import { DiscordWebhookService } from './service/discordWebhook'
-import { DynamoDBService } from './service/dynamo'
-import { SSMService } from './service/ssm'
+import { DiscordWebhookService } from './services/discordWebhook'
+import { DynamoDBService } from './services/dynamodb'
+import { SSMService } from './services/ssm'
 
 const TABLE_NAME = 'RssLastPublished'
 
