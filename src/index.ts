@@ -40,8 +40,6 @@ export const handler = async () => {
       }
     }
 
-    if (!lastPublishedDate || newest > lastPublishedDate) {
-      await dynamoClient.updateLastPublishedDate(feedUrl, newest)
-    }
+    await dynamoClient.updateLastPublishedDate(feedUrl, new Date())
   }
 }
